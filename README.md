@@ -1,3 +1,1027 @@
+## program
+
+```
+
+Lab Assignment - 9
+
+Write a C Program to implement FCFS process scheduling algorithm.
+
+Code: 
+#include <stdio.h>
+
+struct Process {
+    int pid;
+    int at;
+    int bt;
+    int ct;
+    int tat;
+    int wt;
+    int rt;
+    int start_time;
+};
+
+void sortByArrival(struct Process p[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (p[j].at > p[j + 1].at) {
+                struct Process temp = p[j];
+                p[j] = p[j + 1];
+                p[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void findCompletionTimes(struct Process p[], int n) {
+    int current_time = 0;
+    
+    for (int i = 0; i < n; i++) {
+        if (current_time < p[i].at) {
+            current_time = p[i].at;
+        }
+        
+        p[i].start_time = current_time;
+        p[i].ct = current_time + p[i].bt;
+        p[i].tat = p[i].ct - p[i].at;
+        p[i].wt = p[i].tat - p[i].bt;
+        p[i].rt = p[i].wt;
+        
+        current_time = p[i].ct;
+    }
+}
+
+void displayProcesses(struct Process p[], int n) {
+    float total_wt = 0, total_tat = 0, total_rt = 0;
+    int schedule_length = p[n - 1].ct;
+    float throughput = (float)n / schedule_length; 
+
+    printf("\nPID\tAT\tBT\tST\tCT\tTAT\tWT\tRT\n");
+    printf("-------------------------------------------------\n");
+
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+               p[i].pid, p[i].at, p[i].bt, p[i].start_time,
+               p[i].ct, p[i].tat, p[i].wt, p[i].rt);
+
+        total_wt += p[i].wt;
+        total_tat += p[i].tat;
+        total_rt += p[i].rt;
+    }
+
+    printf("\nAverage Waiting Time (AWT) : %.2f", total_wt / n);
+    printf("\nAverage Turnaround Time (ATAT): %.2f", total_tat / n);
+    printf("\nAverage Response Time (ART) : %.2f", total_rt / n);
+    printf("\nSchedule Length (SL) : %d", schedule_length);
+    printf("\nThroughput : %.2f processes/unit time\n", throughput);
+}
+
+void drawGanttChart(struct Process p[], int n) {
+    printf("\nGantt Chart:\n");
+    
+    printf(" ");
+    for (int i = 0; i < n; i++) {
+        printf("--------");
+    }
+    printf("--------");
+    printf("\n|");
+
+    for (int i = 0; i < n; i++) {
+        printf(" P%d |", p[i].pid);
+        if (i < n - 1 && p[i].ct < p[i + 1].at) {
+            printf(" Ideal |");
+        }
+    }
+    
+    printf("\n ");
+    
+    for (int i = 0; i < n; i++) {
+        printf("--------");
+    }
+    printf("--------");
+    printf("\n");
+
+    printf("0");
+    for (int i = 0; i < n; i++) {
+        printf("    %d", p[i].ct);
+        if (i < n - 1 && p[i].ct < p[i + 1].at) {
+            printf("       %d", p[i + 1].at);
+        }
+    }
+    printf("\n");
+}
+
+int main() {
+    int n;
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+    struct Process p[n];
+
+    for (int i = 0; i < n; i++) {
+        printf("\nEnter Process ID, Arrival Time & Burst Time for Process %d: ", i + 1);
+        scanf("%d %d %d", &p[i].pid, &p[i].at, &p[i].bt);
+    }
+
+    sortByArrival(p, n);
+
+    findCompletionTimes(p, n);
+
+    displayProcesses(p, n);
+
+    drawGanttChart(p, n);
+
+    return 0;
+}
+
+
+
+Lab Assignment - 10
+
+Write C Program to implement Round Robin Process Scheduling Algorithm.
+
+Code: 
+
+#include <stdio.h>
+
+struct Process {
+    int id, at, bt, ct, tat, wt, rt, rem_bt, start_time;
+};
+
+void roundRobin(struct Process p[], int n, int quantum) {
+    int time = 0, completed = 0;
+    
+    for (int i = 0; i < n; i++) 
+        p[i].rem_bt = p[i].bt;
+
+    while (completed < n) {
+        int executed = 0;
+
+        for (int i = 0; i < n; i++) {
+            if (p[i].rem_bt > 0 && p[i].at <= time) {
+                executed = 1;
+                
+                if (p[i].rem_bt == p[i].bt)
+                    p[i].start_time = time; 
+
+                if (p[i].rem_bt > quantum) {
+                    time += quantum;
+                    p[i].rem_bt -= quantum;
+                } else {
+                    time += p[i].rem_bt;
+                    p[i].ct = time;
+                    p[i].tat = p[i].ct - p[i].at;
+                    p[i].wt = p[i].tat - p[i].bt;
+                    p[i].rt = p[i].start_time - p[i].at;
+                    p[i].rem_bt = 0;
+                    completed++;
+                }
+            }
+        }
+
+        if (!executed) 
+            time++;
+    }
+}
+
+void display(struct Process p[], int n) {
+    float total_wt = 0, total_tat = 0, total_rt = 0;
+    int schedule_length = p[n - 1].ct;
+    float throughput = (float)n / schedule_length; 
+
+    printf("\nPID\tAT\tBT\tST\tCT\tTAT\tWT\tRT\n");
+    printf("-------------------------------------------------\n");
+
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", 
+            p[i].id, p[i].at, p[i].bt, p[i].start_time,
+            p[i].ct, p[i].tat, p[i].wt, p[i].rt);
+        
+        total_wt += p[i].wt;
+        total_tat += p[i].tat;
+        total_rt += p[i].rt;
+    }
+
+    printf("\nAverage Waiting Time (AWT) : %.2f", total_wt / n);
+    printf("\nAverage Turnaround Time (ATAT): %.2f", total_tat / n);
+    printf("\nAverage Response Time (ART) : %.2f", total_rt / n);
+    printf("\nSchedule Length (SL) : %d", schedule_length);
+    printf("\nThroughput : %.2f processes/unit time\n", throughput);
+}
+
+void drawGanttChart(struct Process p[], int n) {
+    printf("\nGantt Chart:\n");
+    
+    printf(" ");
+    for (int i = 0; i < n; i++) {
+        printf("--------");
+    }
+    printf("--------");
+    printf("\n|");
+
+    for (int i = 0; i < n; i++) {
+        printf(" P%d |", p[i].id);
+        if (i < n - 1 && p[i].ct < p[i + 1].at) {
+            printf(" Ideal |");
+        }
+    }
+    
+    printf("\n ");
+    
+    for (int i = 0; i < n; i++) {
+        printf("--------");
+    }
+    printf("--------");
+    printf("\n");
+
+    printf("0");
+    for (int i = 0; i < n; i++) {
+        printf("    %d", p[i].ct);
+        if (i < n - 1 && p[i].ct < p[i + 1].at) {
+            printf("       %d", p[i + 1].at);
+        }
+    }
+    printf("\n");
+}
+
+int main() {
+    int n, quantum;
+    
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+    
+    struct Process p[n];
+
+    for (int i = 0; i < n; i++) {
+        printf("Enter AT and BT for P%d: ", i + 1);
+        scanf("%d%d", &p[i].at, &p[i].bt);
+        p[i].id = i + 1;
+    }
+
+    printf("Enter time quantum: ");
+    scanf("%d", &quantum);
+
+    roundRobin(p, n, quantum);
+    display(p, n);
+    drawGanttChart(p, n);
+
+    return 0;
+}
+
+
+Lab Assignment - 11
+
+Write a C program to simulate  Priority Scheduling Algorithm.(Non Pre-emptive)
+
+Code: 
+#include <stdio.h>
+
+struct Process {
+    int pid;        
+    int at;         
+    int bt;        
+    int priority;   
+    int wt;        
+    int tat;        
+};
+
+void sortProcesses(struct Process p[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (p[i].at > p[j].at || (p[i].at == p[j].at && p[i].priority > p[j].priority)) {
+                struct Process temp = p[i];
+                p[i] = p[j];
+                p[j] = temp;
+            }
+        }
+    }
+}
+
+void calculateTimes(struct Process p[], int n) {
+    int completion_time = 0;
+    p[0].wt = 0; 
+    for (int i = 0; i < n; i++) {
+        if (completion_time < p[i].at) {
+            completion_time = p[i].at; 
+        }
+        p[i].wt = completion_time - p[i].at;
+        completion_time += p[i].bt;
+        p[i].tat = p[i].wt + p[i].bt;
+    }
+}
+
+void printProcesses(struct Process p[], int n) {
+    printf("\nProcess Details:\n");
+    printf("PID\tAT\tBT\tPriority\tWT\tTAT\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t\t%d\t%d\n", p[i].pid, p[i].at, p[i].bt, p[i].priority, p[i].wt, p[i].tat);
+    }
+}
+
+void printGanttChart(struct Process p[], int n) {
+    printf("\nGantt Chart:\n");
+
+    printf(" ");
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < p[i].bt; j++) printf("--");
+        printf(" ");
+    }
+    printf("\n|");
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < p[i].bt - 1; j++) printf(" ");
+        printf("P%d", p[i].pid);
+        for (int j = 0; j < p[i].bt - 1; j++) printf(" ");
+        printf("|");
+    }
+
+    printf("\n ");
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < p[i].bt; j++) printf("--");
+        printf(" ");
+    }
+    printf("\n0");
+
+    int time = 0;
+    for (int i = 0; i < n; i++) {
+        time += p[i].bt;
+        printf("%*d", p[i].bt * 2, time);
+    }
+    printf("\n");
+}
+
+int main() {
+    int n;
+
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    struct Process p[n];
+
+    for (int i = 0; i < n; i++) {
+        printf("Enter Arrival Time, Burst Time and Priority for Process %d: ", i + 1);
+        scanf("%d %d %d", &p[i].at, &p[i].bt, &p[i].priority);
+        p[i].pid = i + 1;
+    }
+
+    sortProcesses(p, n);
+    calculateTimes(p, n);
+    printProcesses(p, n);
+    printGanttChart(p, n);
+
+    return 0;      }
+
+
+
+Lab Assignment - 12
+
+
+Write a C++ program to simulate Worst fit memory allocation strategies.
+
+Code: 
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    int nb, np;
+
+    cout << "Enter number of processes: ";
+    cin >> np;
+    vector<int> p(np);
+
+    for (int i = 0; i < np; i++) {
+        cout << "\nEnter size of process " << (i + 1) << ": ";
+        cin >> p[i];
+    }
+
+    cout << "\nEnter number of blocks: ";
+    cin >> nb;
+    vector<int> b(nb), bf(nb, 0), bn(np, -1), frag(np);
+
+    for (int i = 0; i < nb; i++) {
+        cout << "\nEnter size of block " << (i + 1) << ": ";
+        cin >> b[i];
+    }
+
+    for (int i = 0; i < np; i++) {
+        int largest = 0;  
+        for (int j = 0; j < nb; j++) {
+            if (bf[j] == 0 && b[j] >= p[i]) {  
+                if (b[j] > largest) {  
+                    bn[i] = j;
+                    largest = b[j];
+                }
+            }
+        }
+       
+        frag[i] = largest - p[i];  
+        if (bn[i] != -1) {  
+            bf[bn[i]] = 1;
+        }
+    }
+
+    cout << "\nProcess No. Process Size Block No. Block Size Fragmentation\n";
+    for (int i = 0; i < np; i++) {
+        if (bn[i] != -1)
+            cout << (i + 1) << "          " << p[i]
+                 << "          " << (bn[i] + 1) << "         " << b[bn[i]]
+                 << "         " << frag[i] << endl;
+        else
+            cout << (i + 1) << "          " << p[i]
+                 << "          Not Allocated" << endl;
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+ 
+Lab Assignment - 13
+
+
+Write a C++ program to simulate first fit memory allocation strategies.
+
+Code: 
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    int nb, np;
+
+    cout << "Enter number of processes: ";
+    cin >> np;
+    vector<int> p(np);
+
+    for (int i = 0; i < np; i++) {
+        cout << "\nEnter size of process " << (i + 1) << ": ";
+        cin >> p[i];
+    }
+
+    cout << "\nEnter number of blocks: ";
+    cin >> nb;
+    vector<int> b(nb), bf(nb, 0), bn(np, -1), frag(np);
+
+    for (int i = 0; i < nb; i++) {
+        cout << "\nEnter size of block " << (i + 1) << ": ";
+        cin >> b[i];
+    }
+
+    for (int i = 0; i < np; i++) {
+        for (int j = 0; j < nb; j++) {
+            if (bf[j] == 0 && b[j] >= p[i]) {
+                bn[i] = j;
+                frag[i] = b[j] - p[i];
+                bf[j] = 1;
+                break;
+            }
+        }
+    }
+
+    cout << "\nProcess No. Process Size Block No. Block Size Fragmentation\n";
+    for (int i = 0; i < np; i++) {
+        if (bn[i] != -1)
+            cout << (i + 1) << "          " << p[i]
+                 << "          " << (bn[i] + 1) << "         " << b[bn[i]]
+                 << "         " << frag[i] << endl;
+        else
+            cout << (i + 1) << "          " << p[i]
+                 << "          Not Allocated" << endl;
+    }
+
+    return 0;
+}
+
+
+ 
+Lab Assignment - 14
+
+
+Write a C++ program to simulate best  fit memory allocation strategies.
+
+Code: 
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    int nb, np;
+ 
+    cout << "Enter number of processes: ";
+    cin >> np;
+    vector<int> p(np);
+
+    for (int i = 0; i < np; i++) {
+        cout << "\nEnter size of process " << (i + 1) << ": ";
+        cin >> p[i];
+    }
+
+    cout << "\nEnter number of blocks: ";
+    cin >> nb;
+    vector<int> b(nb), bf(nb, 0), bn(np, -1), frag(np);
+   
+    for (int i = 0; i < nb; i++) {
+        cout << "\nEnter size of block " << (i + 1) << ": ";
+        cin >> b[i];
+    }
+
+    for (int i = 0; i < np; i++) {
+        int smallest = 1000;
+        for (int j = 0; j < nb; j++) {
+            if (bf[j] == 0 && b[j] >= p[i]) {
+                if (b[j] < smallest) {
+                    bn[i] = j;
+                    smallest = b[j];
+                }
+            }
+        }
+       
+         frag[i] = smallest - p[i];
+        if (bn[i] != -1) {
+            bf[bn[i]] = 1;
+        }
+    }
+ cout << "\nProcess No. Process Size Block No. Block Size Fragmentation\n";
+    for (int i = 0; i < np; i++) {
+        if (bn[i] != -1)
+            cout << (i + 1) << "          " << p[i]
+                 << "          " << (bn[i] + 1) << "         " << b[bn[i]]
+                 << "         " << frag[i] << endl;
+        else
+            cout << (i + 1) << "          " << p[i]
+                 << "          Not Allocated" << endl;
+    }
+
+    return 0;
+}
+ 
+ 
+
+
+Lab Assignment - 15
+
+Write a C program to simulate LRU Page Replacement Algorithm.
+
+Code: 
+
+#include <stdio.h>
+
+int main() {
+    int nf, np;
+    int f[10], p[30], time[10];
+    int hit = 0, fault = 0;
+    int flag1 = 0, flag2 = 0;
+    int cnt = 0, loc = 0, minimum;
+
+    printf("Enter number of pages: ");
+    scanf("%d", &np);
+
+    printf("Enter the page sequence: ");
+    for (int i = 0; i < np; i++) {
+        scanf("%d", &p[i]);
+    }
+
+    printf("Enter number of frames: ");
+    scanf("%d", &nf);
+
+    for (int i = 0; i < nf; i++) {
+        f[i] = -1;
+        time[i] = 0;
+    }
+
+    printf("\nPage Replacement Process:\n");
+
+    for (int i = 0; i < np; i++) {
+        flag1 = flag2 = 0;
+
+        for (int j = 0; j < nf; j++) {
+            if (f[j] == p[i]) {
+                cnt++;
+                time[j] = cnt;
+                hit++;
+                flag1 = flag2 = 1;
+                break;
+            }
+        }
+
+        if (flag1 == 0) {
+            for (int j = 0; j < nf; j++) {
+                if (f[j] == -1) {
+                    cnt++;
+                    fault++;
+                    f[j] = p[i];
+                    time[j] = cnt;
+                    flag2 = 1;
+                    break;
+                }
+            }
+        }
+
+        if (flag2 == 0) {
+            minimum = time[0];
+            loc = 0;
+            for (int j = 1; j < nf; j++) {
+                if (time[j] < minimum) {
+                    minimum = time[j];
+                    loc = j;
+                }
+            }
+            cnt++;
+            fault++;
+            f[loc] = p[i];
+            time[loc] = cnt;
+        }
+
+        printf("%d : ", p[i]);
+        for (int j = 0; j < nf; j++) {
+            if (f[j] != -1)
+                printf("%d ", f[j]);
+            else
+                printf("-1 ");
+        }
+        printf("\n");
+    }
+
+    float total = (float)(hit + fault);
+    float hitRatio = (hit / total) * 100;
+    float faultRatio = (fault / total) * 100;
+
+    printf("\nTotal Hits: %d", hit);
+    printf("\nTotal Faults: %d", fault);
+    printf("\nHit Ratio: %.2f", hitRatio);
+    printf("\nFault Ratio: %.2f\n", faultRatio);
+
+    return 0;
+}
+
+
+
+
+
+Lab Assignment - 16
+
+Write a C program to simulate FIFO Page Replacement Algorithm.
+
+Code: 
+
+#include <stdio.h>
+
+int main() {
+    int nf, np;
+    int f[10], p[30];
+    int hit = 0, fault = 0, flag = 0, position = 0;
+
+    printf("Enter number of pages: ");
+    scanf("%d", &np);
+
+    printf("Enter the page sequence: ");
+    for (int i = 0; i < np; i++) {
+        scanf("%d", &p[i]);
+    }
+
+    printf("Enter number of frames: ");
+    scanf("%d", &nf);
+
+    for (int i = 0; i < nf; i++) {
+        f[i] = -1;
+    }
+
+    printf("\nPage Replacement Process:\n");
+
+    for (int i = 0; i < np; i++) {
+        flag = 0;
+
+        for (int j = 0; j < nf; j++) {
+            if (f[j] == p[i]) {
+                hit++;
+                flag = 1;
+                break;
+            }
+        }
+
+        if (flag == 0) {
+            f[position] = p[i];
+            fault++;
+            position++;
+
+            if (position == nf)
+                position = 0;
+        }
+
+        printf("%d : ", p[i]);
+        for (int j = 0; j < nf; j++) {
+            if (f[j] != -1)
+                printf("%d ", f[j]);
+            else
+                printf("-1 ");
+        }
+        printf("\n");
+    }
+
+    float total = (float)(hit + fault);
+    float hitRatio = (hit / total) * 100;
+    float faultRatio = (fault / total) * 100;
+
+    printf("\nTotal Hits: %d", hit);
+    printf("\nTotal Faults: %d", fault);
+    printf("\nHit Ratio: %.2f", hitRatio);
+    printf("\nFault Ratio: %.2f\n", faultRatio);
+
+    return 0;
+}
+
+
+
+
+
+ 
+
+Lab Assignment - 17
+
+
+Write a C program to simulate Bankers  Algorithm to avoid the deadlock.
+
+Code: 
+
+#include <stdio.h>
+int main() {
+    int np, nr;
+    int allocation[10][10], max[10][10], need[10][10];
+    int available[10], finish[10], flag = 0;
+    int safeseq[10], i, j, k = 0;
+
+    printf("Enter number of processes: ");
+    scanf("%d", &np);
+    printf("Enter number of resources: ");
+    scanf("%d", &nr);
+
+    printf("Enter Allocation matrix:\n");
+    for (i = 0; i < np; i++) {
+        for (j = 0; j < nr; j++) {
+            scanf("%d", &allocation[i][j]);
+        }
+    }
+
+    printf("Enter Max matrix:\n");
+    for (i = 0; i < np; i++) {
+        for (j = 0; j < nr; j++) {
+            scanf("%d", &max[i][j]);
+        }
+    }
+
+    printf("Enter Available resources:\n");
+    for (j = 0; j < nr; j++) {
+        scanf("%d", &available[j]);
+    }
+
+    for (i = 0; i < np; i++) {
+        finish[i] = 0;
+    }
+
+    for (i = 0; i < np; i++) {
+        for (j = 0; j < nr; j++) {
+            need[i][j] = max[i][j] - allocation[i][j];
+        }
+    }
+
+    printf("Need Matrix:\n");
+    for (i = 0; i < np; i++) {
+        for (j = 0; j < nr; j++) {
+            printf("%d ", need[i][j]);
+        }
+        printf("\n");
+    }
+
+    for (i = 0; i < np; i++) {
+        flag = 0;
+        if (finish[i] == 0) {
+            for (j = 0; j < nr; j++) {
+                if (need[i][j] > available[j]) {
+                    flag = 1;
+                    break;
+                }
+            }
+            if (flag == 0) {
+                finish[i] = 1;
+                for (j = 0; j < nr; j++) {
+                    available[j] += allocation[i][j];
+                }
+                safeseq[k++] = i;
+                i = -1;
+            }
+        }
+    }
+
+    int deadlock = 0;
+    for (i = 0; i < np; i++) {
+        if (finish[i] == 0) {
+            deadlock = 1;
+            break;
+        }
+    }
+
+    if (deadlock) {
+        printf("System is in Deadlock.\n");
+    } else {
+        printf("System is in Safe State.\n");
+        printf("Safe sequence: ");
+        for (i = 0; i < np; i++) {
+            printf("P%d ", safeseq[i]);
+        }
+        printf("\n");
+    }
+
+    return 0;
+}
+
+
+
+Lab Assignment - 18
+
+
+Write a C program to simulate FCFS disk scheduling algorithm.
+
+Code: 
+
+#include<stdio.h>
+#include<stdlib.h>
+
+int main(){
+    int n;
+    int disc_req[200];
+    int head;
+    int tracks;
+    int THM =0;
+
+    printf("Enter total number of requests : ");
+    scanf("%d",&n);
+
+    printf("Enter disc requests : ");
+    for(int i=0;i<n;i++){
+        scanf("%d",&disc_req[i]);
+    }
+
+    printf("Enter head position : ");
+    scanf("%d",&head);
+
+    printf("Enter number of tracks : ");
+    scanf("%d",&tracks);
+
+    printf("\nSeek Sequnce : %d",head);
+
+    for(int i=0;i<n;i++){
+        THM+= abs(head -disc_req[i]);
+        head = disc_req[i];
+        printf("-> %d",head);
+    }
+    printf("\nTotal head movement : %d\n",THM);
+    return 0;
+
+}
+
+
+
+
+
+Lab Assignment - 19
+
+
+Write a C program to simulate SSTF disk scheduling algorithm.
+
+Code: 
+
+#include<stdio.h>
+#include<stdlib.h> 
+
+int main()
+{
+    int n;
+    int disc_req[200];
+    int head;
+    int tracks;
+    int pending;
+    int diff;
+    int min;
+    int index;
+    int thm = 0;
+    int finish[200] = {0}; 
+
+    printf("Enter total number of requests: ");
+    scanf("%d", &n);
+    
+    printf("Enter number of disc requests: ");
+    for(int i = 0; i < n; i++)
+    {
+        scanf("%d", &disc_req[i]);
+    }
+
+    printf("Enter head position: ");
+    scanf("%d", &head);
+    
+    printf("Enter number of tracks: ");
+    scanf("%d", &tracks);
+    
+    pending = n;
+    
+    printf("\nSeek Sequence: %d", head);
+
+    while(pending > 0) 
+    {
+        min = 1000; 
+        
+        for(int i = 0; i < n; i++)
+        {
+            if(finish[i] == 0)
+            {
+                diff = abs(head - disc_req[i]);
+                if(diff < min)
+                {
+                    min = diff;
+                    index = i;
+                }
+            }
+        }
+
+        thm = thm + abs(head - disc_req[index]);
+        finish[index] = 1;
+        pending--;
+        head = disc_req[index];
+        printf(" -> %d", head); 
+    }
+    
+    printf("\nTotal head movement: %d\n", thm);
+    
+    return 0;
+}
+
+
+
+
+Lab Assignment - 20
+
+
+Write C program to convert logical adderss into physical address in paging.Use addressmapping function.
+
+Code: 
+
+#include <stdio.h>
+
+int main() {
+    int n;
+    int pageTable[10];
+    int pageNum, frameNum, offset, logicalAddress, physicalAddress, pageSize;
+
+    printf("Enter the number of pages: ");
+    scanf("%d", &n);
+
+    if (n > 10) {
+        printf("Error: Maximum number of pages is 10.\n");
+        return -1;
+    }
+
+    printf("Enter the frame numbers for the page table:\n");
+    for (int i = 0; i < n; i++) {
+        printf("Frame number for page %d: ", i);
+        scanf("%d", &pageTable[i]);
+    }
+
+    printf("Enter the page size: ");
+    scanf("%d", &pageSize);
+
+    printf("Enter the logical address: ");
+    scanf("%d", &logicalAddress);
+
+    pageNum = logicalAddress / pageSize;
+    offset = logicalAddress % pageSize;
+
+    if (pageNum >= n) {
+        printf("Invalid logical address! Page number exceeds the number of pages.\n");
+        return -1;
+    }
+
+    frameNum = pageTable[pageNum];
+
+    physicalAddress = (frameNum * pageSize) + offset;
+
+    printf("\nLogical Address: %d\n", logicalAddress);
+    printf("Page Number: %d\n", pageNum);
+    printf("Offset: %d\n", offset);
+    printf("Frame Number: %d\n", frameNum);
+    printf("Physical Address: %d\n", physicalAddress);
+
+    return 0;
+}
+
+
+```
+
 ## phase1
 
 ```
