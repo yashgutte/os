@@ -1,6 +1,8 @@
 ## phase1
 
 ```
+CP 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -351,6 +353,479 @@ int main()
 
     return 0;
 }
+
+
+
+
+Lab Assignment 6
+
+1.	Assume Hello Students SY B Div  Welcome to OS Lab  placed in input.txt file. Write a C++ program to read the file line by line and display output on screen.
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+int main() {
+    ifstream inputFile("input.txt"); 
+    string line;
+
+    while (getline(inputFile, line)) {
+        cout << line << endl;
+    }
+
+    inputFile.close();
+    return 0;
+}
+
+
+2.	Assume buffer is holding temporary data. Write a C++ program to store line from input.txt file into buffer. Also display buffer output on screen.
+
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ifstream inputFile("input.txt"); 
+    string line;
+    vector<string> buffer;
+
+    while (getline(inputFile, line)) {
+        buffer.push_back(line);
+    }
+    inputFile.close();  
+
+    for (const string& bufferedLine : buffer) {
+        cout << bufferedLine << endl;
+    }
+
+    return 0;
+}
+
+3.	Assume external memory is 100 by 4. Write a C++ Program to store buffer content into external memory location 00.
+
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ifstream inputFile("input.txt"); 
+    string line, fullText;
+    vector<string> buffer;
+
+    while (getline(inputFile, line)) {
+        buffer.push_back(line);
+    }
+    inputFile.close();
+
+    for (const string& text : buffer) {
+        fullText += text + " ";
+    }
+
+    string externalMemory[100][4];
+    int externalRow = 0, externalCol = 0, currentCharIndex = 0, textLength = fullText.length();
+
+    while (currentCharIndex < textLength && externalRow < 100) {
+        externalMemory[externalRow][externalCol] = fullText.substr(currentCharIndex, 4);
+        currentCharIndex += 4;
+        externalCol = (externalCol + 1) % 4;
+        if (externalCol == 0) externalRow++;
+    }
+
+    for (int r = 0; r < 100; ++r) {
+        for (int c = 0; c < 4; ++c) {
+            cout << "Memory Location [" << r << "][" << c << "]: " 
+                 << (externalMemory[r][c].empty() ? "****" : externalMemory[r][c]) << endl;
+        }
+    }
+
+    return 0;
+}
+
+
+4.	Write C++ Program to write content into output.txt file from external memory. Memory block 0 consist Hello Students SY B Div   data.
+
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+int main() {
+    ifstream inputFile("input.txt");  
+    string buffer;
+
+    getline(inputFile, buffer);  
+    inputFile.close();  
+
+    string externalMemory[100][4];  
+    int externalRow = 0, externalCol = 0, currentCharIndex = 0;
+
+    for (char ch : buffer) {
+        if (externalRow >= 100) break;
+        externalMemory[externalRow][externalCol] += ch;
+        currentCharIndex++;
+
+        if (currentCharIndex % 4 == 0) {
+            externalCol++;
+            if (externalCol == 4) {
+                externalCol = 0;
+                externalRow++;
+            }
+        }
+    }
+
+    ofstream outputFile("output.txt");
+    for (int r = 0; r <= externalRow; ++r) { 
+        for (int c = 0; c < 4; ++c) {
+            if (!externalMemory[r][c].empty()) {
+                outputFile << externalMemory[r][c];
+            }
+        }
+    }
+    outputFile.close();  
+
+    cout << "Content written to output.txt successfully." << endl;
+    return 0;
+}
+
+
+
+
+Lab Assignment 7
+
+
+Q. Write a program to Load job  in external memory. Assume size of external memory is 100 by 4 and starting address of program is 00.
+
+#include <stdio.h> 
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_MEMORY 100 
+#define MAX_REG 4 
+#define MAX_BUFFER 40
+
+char M[MAX_MEMORY][MAX_REG]; 
+char IR[MAX_REG]; 
+char R[MAX_REG]; 
+int IC; 
+int C; 
+int SI;
+
+void init() {
+
+    for (int i = 0; i < MAX_MEMORY; i++) { 
+        memset(M[i], '*', MAX_REG); }
+
+    memset(IR, '*', MAX_REG); 
+    memset(R, '*', MAX_REG); 
+    IC = 0; 
+    SI = 0;
+    C = 0;
+
+    printf("IR: "); 
+    for (int i = 0; i < MAX_REG; i++) { 
+        printf("%c", IR[i]); } printf("\n");
+        printf("R: "); 
+        for (int i = 0; i < MAX_REG; i++) { 
+            printf("%c", R[i]); } 
+            printf("\n");
+
+    printf("T: ");
+    printf("%d\n", IC); 
+    printf("SI: "); 
+    printf("%d\n", SI); 
+    printf("C: "); 
+    printf("%d\n", C); }
+
+void printMemory() {
+
+for (int i = 0; i < MAX_MEMORY; i++) { 
+    printf("M[%02d]: ", i); 
+    for (int j = 0; j < MAX_REG; j++) { 
+        printf("%c", M[i][j]); } 
+        printf("\n"); } }
+
+void load() { 
+    FILE *fileReader = fopen("input_main.txt", "r"); 
+    if (fileReader == NULL) { 
+        printf("Error: Could not open input fi le.\n"); 
+        return; }
+
+int row = 0;
+char line[100]; 
+
+while (fgets(line, sizeof(line), fileReader)) {
+
+    line[strcspn(line, "\n")] = 0;
+
+    if (strncmp(line, "$AMJ", 4) == 0) { 
+        init(); 
+        while (fgets(line, sizeof(line), fileReader)) {
+
+    line[strcspn(line, "\n")] = 0;
+
+    if (strncmp(line, "$DTA", 4) == 0 || strncmp(line, "$END", 4) == 0) { 
+        break; }
+
+    for (int i = 0; i < strlen(line); i += 4) { 
+        if (row >= MAX_MEMORY) { break; }
+
+    for (int j = 0; j < 4 && (i + j) < strlen(line); j++) { 
+        M[row][j] = line[i + j]; }
+
+    if (strlen(line) - i < 4) { 
+        for (int k = strlen(line) - i; k < 4; k++) {
+            M[row][k] = '*'; } }
+
+row++; } } } }
+
+fclose(fileReader); 
+printMemory(); }
+
+int main() { 
+    load(); 
+    return 0; }
+
+
+
+Lab Assignment - 8
+
+
+1.	Write a C program to write a Start_Execution()  module  to execute LR,SR,CR,BT ,GD,PD,H instruction.
+
+Code: 
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+
+#define MAX_MEMORY 100
+#define MAX_REG 4
+#define MAX_BUFFER 42
+
+char Memory[MAX_MEMORY][MAX_REG];   
+char R[MAX_REG];                    
+char IR[MAX_REG];                   
+unsigned int IC;                    
+bool C;                             
+int SI;                             
+char buffer[MAX_BUFFER];            
+
+FILE *inputfile, *outputfile;
+
+void INIT();
+void LOAD();
+void EXECUTE();
+void MOS();
+void Start();
+int OppAdd();
+void READ();
+void WRITE();
+void HALT();
+
+void INIT() {
+    for (int i = 0; i < MAX_MEMORY; i++) {
+        for (int j = 0; j < MAX_REG; j++) {
+            Memory[i][j] = '*';
+        }
+    }
+
+    for (int i = 0; i < MAX_REG; i++) {
+        IR[i] = '*';
+        R[i] = '*';
+    }
+
+    C = false;
+    IC = 0;
+}
+
+void LOAD() {
+    printf("Reading Data...\n");
+    int x = 0;
+    
+    for (int i = 0; i < MAX_MEMORY; i++) {
+        for (int j = 0; j < MAX_REG; j++) {
+            Memory[i][j] = '*';
+        }
+    }
+
+    while (fgets(buffer, MAX_BUFFER, inputfile)) {
+        buffer[strcspn(buffer, "\n")] = 0;
+        if (strncmp(buffer, "$AMJ", 4) == 0) {
+            INIT();
+        } else if (strncmp(buffer, "$DTA", 4) == 0) {
+            Start();
+        } else if (strncmp(buffer, "$END", 4) == 0) {
+            for (int i = 0; i < MAX_MEMORY; i++) {
+                printf("M[%02d]: ", i);
+                for (int j = 0; j < MAX_REG; j++) {
+                    printf("%c", Memory[i][j]);
+                }
+                printf("\n");
+                if (i % 10 == 9) {
+                    printf("\n");
+                }
+            }
+            continue;
+        } else {
+            int k = 0;
+            int limit = x + 10;
+
+            for (; x < limit; ++x) {
+                for (int j = 0; j < MAX_REG; ++j) {
+                    if (buffer[k] != '\n' && k < strlen(buffer)) {
+                        Memory[x][j] = buffer[k++];
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+int OppAdd() {
+    int add = IR[2] - '0';
+    add = add * 10 + (IR[3] - '0');
+    return add;
+}
+
+void Start() {
+    IC = 0;
+    EXECUTE();
+}
+
+void EXECUTE() {
+    while (1) {
+        for (int i = 0; i < MAX_REG; i++) {
+            IR[i] = Memory[IC][i];
+        }
+        IC++;
+
+        int loc = OppAdd();
+
+        if (IR[0] == 'G' && IR[1] == 'D') {
+            SI = 1;
+            MOS();
+        } else if (IR[0] == 'P' && IR[1] == 'D') {
+            SI = 2;
+            MOS();
+        } else if (IR[0] == 'H') {
+            SI = 3;
+            MOS();
+            break;
+        } else if (IR[0] == 'L' && IR[1] == 'R') {
+            for (int j = 0; j < MAX_REG; j++) {
+                R[j] = Memory[loc][j];
+            }
+        } else if (IR[0] == 'S' && IR[1] == 'R') {
+            for (int j = 0; j < MAX_REG; j++) {
+                Memory[loc][j] = R[j];
+            }
+        } else if (IR[0] == 'C' && IR[1] == 'R') {
+            int count = 0;
+            for (int j = 0; j < MAX_REG; j++) {
+                if (Memory[loc][j] == R[j]) {
+                    count++;
+                }
+            }
+            C = (count == MAX_REG);
+        } else if (IR[0] == 'B' && IR[1] == 'T') {
+            if (C) {
+                IC = loc;
+                C = false;
+            }
+        }
+    }
+}
+
+void MOS() {
+    switch (SI) {
+        case 1:
+            for (int i = 0; i < MAX_BUFFER; i++) {
+                buffer[i] = 0;
+            }
+            READ();
+            break;
+        case 2:
+            WRITE();
+            break;
+        case 3:
+            HALT();
+            break;
+        default:
+            break;
+    }
+}
+
+void READ() {
+    fgets(buffer, MAX_BUFFER, inputfile);
+    int k = 0;
+    int loc = OppAdd();
+
+    for (int i = 0; i < 10; ++i) {
+        for (int j = 0; j < MAX_REG; ++j) {
+            if (buffer[k] == '\0' || k >= strlen(buffer)) {
+                return;  
+            }
+            Memory[loc][j] = buffer[k++];
+        }
+        loc++;
+    }
+}
+
+void WRITE() {
+    int loc = OppAdd();
+
+    for (int i = 0; i < 10; ++i) {
+        for (int j = 0; j < MAX_REG; ++j) {
+            if (Memory[loc][j] == '*') {
+                break;  
+            }
+            fprintf(outputfile, "%c", Memory[loc][j]);
+        }
+        loc++;
+    }
+    fprintf(outputfile, "\n");
+}
+
+void HALT() {
+    fprintf(outputfile, "\n\n");
+}
+
+int main() {
+    printf("\t\tSY CS B Group 27\n\n\n");
+    printf("Press any key to continue...\n");
+    getchar();
+
+    inputfile = fopen("input.txt", "r");
+    outputfile = fopen("output.txt", "w");
+
+    if (!inputfile) {
+        printf("File doesn't exist\n");
+    } else {
+        printf("File Exists\n");
+    }
+
+    LOAD();
+
+    fclose(inputfile);
+    fclose(outputfile);
+    return 0;
+}
+
+
+
 
 ```
 
